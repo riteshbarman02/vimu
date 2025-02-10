@@ -3,65 +3,183 @@ title: Self hosting - Installation
 description: You can install and run vimu on any operating system that can run a Docker CLI or has python, NodeJS, and go installed. You can use vimu on your local machine or a cloud provider of your choice. You can either install it bare-metal or use Docker.
 ---
 
-# Installation
+# I# 1. Introduction
 
-You can install and run **vimu** on any operating system that can run a Docker CLI or has ```python```, ```NodeJS```, and ```go``` installed. You can use **vimu** on your local machine or a cloud provider of your choice. You can either install it bare-metal or use Docker.
+**vimu** is a versatile music score analysis tool that enables:
 
-## System requirements
+- Score transposition - Shift notes up/down by any number of semitones
+- Pattern searching - Find specific melodies, rhythms, and chord patterns across voices
+- Key change detection - Uses [AugmentedNet](https://github.com/napulen/AugmentedNet) to identify modulations based on note sequences
 
-**vimu** is designed to run well on both small and large deployments. The minimum requirements to run **vimu** are as little as 1 CPU core and 2GB of RAM.
+**Architecture:**
 
-Should you opt to run **vimu** with Docker, make sure your Docker installation is updated to support Composer V2.
+The application is organized into three main services orchestrated via Docker Compose:
 
-## Get the code
+- **vimu:** Frontend service handling the user interface and client-side logic
+- **vimu-engine:** Backend service responsible for music analysis and ML processing
+- **vimu-pocketbase:** Database service managing authentication and data persistence
 
-In any case, the first step is to obtain the code for **vimu** from GitHub.
+These services are containerized and connected through a Docker network, enabling seamless communication while maintaining isolation.
+
+**Tech Stack:**
+
+- Frontend: Vue.js, Nuxt.js
+- Backend: FastAPI (ML processing)
+- Database: PocketBase (Auth & Data Storage)
+
+**What is Docker?**
+
+Docker is an open-source platform that automates the deployment, scaling, and management of applications using containerization technology. It packages applications and their dependencies into standardized units called containers, ensuring consistent behavior across different environments.
+
+**Key Benefits:**
+
+- Consistent environments across development and production
+- Lightweight and efficient resource utilization
+- Rapid deployment and scaling capabilities
+- Isolation between applications and services
+
+**Docker Compose Overview:**
+
+Docker Compose is a tool for defining and running multi-container Docker applications. It uses YAML files to configure application services, making it easy to manage complex applications with multiple interconnected containers.
+
+**Docker Compose Features:**
+
+- Single command to spin up entire application stack
+- Environment variable management and service configuration
+- Network creation and container linking
+- Volume management for persistent data
+
+# 2. Project Setup & Folder Structure
+
+The project follows this directory structure:
+
+```
+vimu-project/
+├── .env                      # Root environment variables
+├── docker-compose.yml        # Main docker compose configuration
+├── vimu/                     # Frontend application
+│   ├── Dockerfile
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── vimu-engine/             # Backend service
+│   ├── Dockerfile
+│   ├── src/
+│   ├── requirements.txt
+│   └── models/
+└── vimu-pocketbase/        # Database service
+    ├── Dockerfile
+    └── pb_data/            # PocketBase data directory
+```
+
+## Installation
+
+**Download and install docker** 
+### Prerequisites
+- Windows 10 (Pro, Enterprise, or Education) version 1909 or later
+- WSL 2 enabled
+### Steps
+1. **Download Docker Desktop**
+    - Visit Docker's official website and download Docker Desktop for Windows.
+2. **Install Docker Desktop**
+    - Run the installer and follow the on-screen instructions.
+    - Ensure "Enable WSL 2 features" is checked during installation.
+3. **Start Docker**
+    - Launch Docker Desktop from the Start Menu.
+    - Wait for Docker to initialize.
+4. **Verify Installation**
+    - Open PowerShell or Command Prompt and run:
+      ```
+        docker --version
+        ```
+    - Run a test container:
+        ```
+        docker run hello-world
+        ```
+
+---
+
+## 2. Install Docker on macOS
+
+### Prerequisites
+
+- macOS 11 (Big Sur) or later
+    
+
+### Steps
+
+5. **Download Docker Desktop**
+    
+    - Visit Docker's official website and download Docker Desktop for macOS.
+        
+6. **Install Docker**
+    
+    - Open the downloaded `.dmg` file and drag the Docker icon to the Applications folder.
+        
+7. **Start Docker**
+    
+    - Open Docker from the Applications folder.
+        
+    - Wait for Docker to initialize.
+        
+8. **Verify Installation**
+    
+    - Open Terminal and run:
+        
+        ```
+        docker --version
+        ```
+        
+    - Run a test container:
+        
+        ```
+        docker run hello-world
+        ```
+        
+
+---
+
+
+**Clone the repositories:**
 
 ```bash
-# vimu
-git clone https://github.com/Flomp/vimu.git
+# Create and enter project directory
+mkdir vimu-project
+cd vimu-project
 
-# vimu-engine
-git clone https://github.com/Flomp/vimu-engine.git
-
-# vimu-pocketbase
-git clone https://github.com/Flomp/vimu-pocketbase.git
+# Clone the repositories
+git clone <https://github.com/Flomp/vimu>
+git clone <https://github.com/Flomp/vimu-engine>
+git clone <https://github.com/Flomp/vimu-pocketbase>
 
 ```
 
-## Environment
+**Environment Configuration:**
 
-**vimu** expects a few environment variables to be present when launched. Where you define these variables depends on the way you install **vimu**.
+Create a .env file in the root directory:
 
-### Docker
-With Docker, you can conveniently define all variables in your docker-compose file (see below).
+```bash
+# .env
+# Application URL
+APP_URL=http://localhost:3000
 
-### Bare-metal
+# API URL
+API_URL=http://localhost:5000
 
-With a bare-metal installation, you can either export the variables directly on your machine or put them in separate ```.env``` files in the respective component's folder.
+# PocketBase Configuration
+POCKETBASE_URL=http://localhost:8090
+POCKETBASE_ADMIN_EMAIL=admin@example.com
+POCKETBASE_ADMIN_PASSWORD=securepassword
 
-### Variables
-<br>
+# Redis Configuration
+REDIS_URL=redis://vimu-redis:6379
+```
 
-| Name           | Description                                                                                                     | Required | Used by                            |
-| :------------- | :-------------------------------------------------------------------------------------------------------------- | :------- | :--------------------------------- |
-| APP_URL        | The URL under which vimu will be available (e.g. https://vimu.app)                                              | Yes      | vimu, vimu-engine, vimu-pocketbase |
-| API_URL        | The URL under which vimu-engine will be available (e.g. https://api.vimu.app)                                   | Yes      | vimu                               |
-| POCKETBASE_URL | The URL under which vimu-pocketbase will be available (e.g. https://pb.vimu.app)                                | Yes      | vimu, vimu-engine                  |
-| REDIS_URL      | URL to a redis installation (e.g. redis://localhost:6379). Only needed if you want vimu-engine to cache results | No       | vimu-engine                        |
-| ALLOW_PLUGINS  | Allow the usage of plugins on the server side (see security warning). Default: False                            | No       | vimu-engine                        |
+**Docker Compose Configuration:**
 
-### Security
+Create a docker-compose.yml file in the root directory:
 
-<div role="alert" class="v-alert v-sheet v-alert--prominent v-alert--text error--text"><div class="v-alert__wrapper"><i class="v-icon v-alert__icon mdi mdi-alert error--text"></i><div class="v-alert__content"> Only enable the ALLOW_PLUGINS flag if you really know what you are doing. Plugins allow users to execute untrusted code on your server. Be extremely careful how you set up your environment to mitigate remote code execution attacks. Failing to do so can give an attacker complete control of your systems.  </div></div></div>
-
-## Install with Docker
-
-The quickest and easiest way to run **vimu** is by using Docker. Make sure you have installed the <a href="https://www.docker.com/products/docker-desktop">Docker CLI</a> on your machine before proceeding.
-
-Navigate to the root folder that contains vimu, vimu-engine & vimu-pocketbase. Create a ```docker-compose.yml``` with the following content.
-
-```yml[docker-compose.yml]
+```yaml
 version: "3.9"
 services:
   vimu:
@@ -105,75 +223,53 @@ services:
     volumes:
       - /data/vimu-redis:/data
 ```
-<br>
 
-### Start
+## Local Development Setup
 
-You can bring the containers up by using the following command executed from the same directory as your ```docker-compose.yml``` file.
+**Prerequisites:**
+
+- Docker and Docker Compose installed
+- Basic understanding of terminal/command line
+
+**Launch the Application:**
 
 ```bash
-# Start
+# Start all services in detached mode
 docker compose up -d
+
+# View logs (optional)
+docker compose logs -f
 ```
 
-### Stop
+**Accessing the Services:**
 
-You can stop your **vimu** containers by using the following command.
+- Frontend (vimu): [http://localhost:3000](http://localhost:3000)
+- Backend API (vimu-engine): [http://localhost:5000](http://localhost:5000)
+- PocketBase Admin UI: [http://localhost:8090/_/](http://localhost:8090/_/)
+- Redis: localhost:6379
+
+**How to get access of the database**
+
+once your all servers are running then go to the 
+```
+http://127.0.0.1:8090/_/?installer#
+```
+![[Pasted image 20250210142618.png|500]]
+
+```
+POCKETBASE_ADMIN_EMAIL=admin@example.com
+POCKETBASE_ADMIN_PASSWORD=securepassword
+```
+
+now you can login in your admin account of the pocketbase
 
 ```bash
-# Stop
-docker compose stop
+docker compose down
 ```
 
-### Uninstall
+**Troubleshooting Tips:**
 
-To stop and remove your **vimu** containers, you can use the following.
-
-```bash
-# Uninstall
-docker compose down -v
-```
-
-## Install bare-metal
-
-### Prerequisites
-
-You need to have ```NodeJS>=16.15.1```, ```python>=3.10```, and ```go>=1.19.5``` installed on your machine.
-
-### vimu
-
-```bash
-cd ./vimu
-# install dependencies
-npm install
-# neccessary for nodejs 17 and up
-export NODE_OPTIONS=--openssl-legacy-provider
-# build with nuxt
-npm run build
-# start vimu
-npm start
-```
-
-### vimu-engine
-
-```bash
-cd ./vimu-engine
-# install dependencies
-pip install --no-cache-dir --upgrade -r requirements.txt
-# start vimu-engine
-uvicorn main:app --host 0.0.0.0 --port 5000
-```
-
-### vimu-pocketbase
-
-```bash
-cd ./vimu-pocketbase
-# install dependencies
-go mod download
-# build
-go build -o ./vimu-pocketbase
-# migrate database
-./vimu-pocketbase migrate
-# start vimu-pocketbase
-./vimu-pocketbase serve --http=0.0.0.0:8090 --dir=./pb_data
-```
+- Check container logs using `docker compose logs [service-name]`
+- Ensure all required ports (3000, 5000, 8090, 6379) are available
+- Verify that the .env file is properly configured
+- Use `docker compose down -v` to remove volumes and start fresh if needed
